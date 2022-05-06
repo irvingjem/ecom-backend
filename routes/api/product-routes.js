@@ -7,7 +7,12 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 router.get('/', (req, res) => {
     // find all products
     Product.findAll({
-            include: [Category, Tag]
+            include: [Category,
+                {
+                    model: Tag,
+                    through: ProductTag
+                }
+            ]
         }).then(productData => res.json(productData))
         .catch(err => res.status(500).json(err));
 
@@ -19,25 +24,30 @@ router.get('/:id', (req, res) => {
     // find a single product by its `id`
     Product.findOne({
             // be sure to include its associated Category and Tag data
-            include: [Category, Tag],
             where: {
                 id: req.params.id
-            }
-        }).then(product => {
-            if (!product) {
-                res.status(404).json({ message: "no existing product" });
-                return;
-            }
-            res.json(category);
+            },
+            include: [
+                Category,
+                {
+                    model: Tag,
+                    through: ProductTag
+                }
+            ]
         })
-        .catch(err => res.status(500).json(err))
-
-
+        .then(product => {
+            if (!product) {
+                res.status(404).json({ message: 'No existing product with this given ID.' });
+                return
+            }
+            res.json(product)
+        })
+        .catch(err => res.status(500).json(err));
 });
+
 
 // create new product
 router.post('/', (req, res) => {
-
     Product.create(req.body)
         .then((product) => {
             // if there's product tags, we need to create pairings to bulk create in the ProductTag model
